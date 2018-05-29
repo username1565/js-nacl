@@ -1,0 +1,122 @@
+<script>
+document.write('<small>- This page is independent and no need to include any scripts.',
+'<br>- This page contains separate functions generate_random_bytes(N), xor_2_bytes(bytestring), and getRandombyte</small><br>',
+'<h1>Why I did do this file?</h1>'+
+'NaCl using in Tox, qTox, uTox, etc...<br><br>'+
+'If you did delete your friend, and if your are in his friend-list,<br>'+
+'you can find only his public_key (32 bytes) in your tox_save file. There is no full ToxIDs.<br>'+
+'So you can add him by using <b>modified ToxID for him</b>, but you need to generate this correctly.<br>'+
+'<hr><b>Case of using modified ToxIDs:</b>'+
+'<br>If you already is in friend list of your friend, he can be add automatically by modified ToxID, when he will be online.'+
+'<br>If both friends are deleted, friend request by using modified ToxID - not available to accept.'+
+'<br>But when two friends do adding together both, using modified ToxIDs, they are available both, without accepting any friend requests.'+
+'<br>All this means, that can be used only public keys with random spam number to save contact of your friend/friends.'+
+'<hr>'+
+'ToxID contains:'+
+'<br>Public key (32 bytes) + NoSpam Number (4 bytes) + 2_Bytes_XOR_checksum (2 bytes).'+
+'<br>Public key you can find in tox_save file.'+
+'<br>Random Nospam Number and XOR checksum - can be calculated here.'+
+'<br>See source code to do this...'+
+'<br>Generate key or calculate public key from private key - <a href="./generate_keypair.html">YOU CAN HERE</a>'+
+'<hr>'
+);
+
+//function to get random byte in UPPERCASE HEX format
+//by generate a min value inclusive, up to a maximum (not inclusive)
+function getRandombyte(min, max){
+  var min = (typeof min === 'undefined') ? 0 : min;		//if undefined, set 0
+  var max = (typeof max === 'undefined') ? 256 : max;	//if undefined, set 256
+
+  var value = Math.floor(Math.random() * (max - min)) + min;	//random int from 0 to 255 inclusive
+
+  if(value<16){value = '0'+value.toString(16).toUpperCase();}	//if <16, set 0 in half byte and to hex
+  else{value = value.toString(16).toUpperCase();}				//else to hex 2 hex value
+  
+  return value;	//return this in UPPERCASE HEX
+}
+
+//function for generate random N bytes with UPPERCASE HEX format
+function generate_random_bytes(N){//return rand 32 bytes
+	var UpperCaseHex = '';
+	for(i=0;i<N;i++){
+		UpperCaseHex+=getRandombyte();
+	}
+	if(UpperCaseHex.length/2===N){return UpperCaseHex;}else{alert('Public key must contain '+N+' bytes, but: '+UpperCaseHex.length/2);}
+}
+
+//function for calculate XOR checksum. 2 bytes first XOR 2 bytes second, then result to 2 bytes next, etc...
+function xor_2_bytes(bytestring){
+	re=/(.{4}|.)/g					//split hex string - by 4 symbols (2 bytes)
+	bytes2 = bytestring.match(re);	//make array with 2 bytes elements
+	//document.write('<br>2 bytes array is: '+bytes2);
+
+	Xor2bytes = bytes2[0];
+
+	for(i=1;i<bytes2.length;i++){
+		Xor2bytes = (parseInt(bytes2[i], 16)^parseInt(Xor2bytes, 16)).toString(16).toUpperCase();
+	}
+	while(Xor2bytes.length<4){		//add nulls if lenght less then 4 UpperCase HEX symbols
+		Xor2bytes = '0'+Xor2bytes;
+	}
+	return Xor2bytes;
+}
+
+//test
+//real ToxID - this may be a UPPERCASE HEX STRING, contains 32 bytes (64 symbols), like:
+ToxID = 'D38434839091B734108C61F9D36BB9002DE0FD9018C8E83548E9FF86755781736C46C333170F';
+XOR_checksum = ToxID.substring(ToxID.length - 2*2); //XOR checksum is last two bytes in ToxID. To the var this.
+bytestring = ToxID.substring(0,32*2+4*2); //ToxID without checksum. This may be 170F
+XOR_checksum_calculating = xor_2_bytes(bytestring); //calculating this
+document.write(
+'<br>'+ToxID.length/2+'bytes, ToxID: '+ToxID+
+'<br>string, without XOR-checksum is: '+bytestring+
+'<br>XOR checksum from ToxID: '+XOR_checksum+
+'<br>XOR 2 bytes checksum calculating (XOR first 2 bytes to second,'+
+'then result to second, result on third... etc...): '+'<b>'+XOR_checksum_calculating+'</b>');
+//check this
+if(XOR_checksum===XOR_checksum_calculating && XOR_checksum_calculating==='170F'){document.write('<br>'+XOR_checksum_calculating+' === '+XOR_checksum);}
+//Now XOR checksum calculating correctly.
+
+
+
+
+/*
+//test
+bytes = generate_random_bytes(32);												//Just some 32 bytes
+console.log(xor_2_bytes(bytes));												//2 bytes XOR checksum this
+*/
+
+//__________________________________________________________________________________________________________________________________________
+//this may be a UPPERCASE HEX STRING, contains 32 bytes (64 symbols), like:
+//public_key = '6068B54763057103BA21CF7BD85C9351E85B49DC3F1E02D80E132CF66983008B';
+public_key = generate_random_bytes(32);											//32 bytes. You can find this in tox_save-file, in hex
+Random_NoSpam_number = generate_random_bytes(4)									//generate random nospam number (4 bytes)
+checksum = xor_2_bytes(public_key+Random_NoSpam_number);							//XOR checksum public_key + NoSpam_number
+
+document.write(//return new ToxID
+'<br><br>random friend1'+
+'<br>('+public_key.length/2+' bytes) public_key: '+public_key+
+'<br>('+Random_NoSpam_number.length/2+' bytes) Random_NoSpam_number: '+Random_NoSpam_number+
+'<br>('+checksum.length/2+' bytes) checksum Pub+Nospam: '+checksum+
+'<br>('+(public_key+Random_NoSpam_number+checksum).length/2+' bytes) <b>New ToxID: '+public_key+Random_NoSpam_number+checksum+'</b>');
+
+//__________________________________________________________________________________________________________________________________________
+//this may be a UPPERCASE HEX STRING, contains 32 bytes (64 symbols), like:
+public_key = '92E91DB241CFCE547EFFE7CCB6394A8E3696E2C630717925FB7C9D1823F98564';
+//public_key = generate_random_bytes(32);											//32 bytes. You can find this in tox_save-file, in hex
+Random_NoSpam_number = generate_random_bytes(4)									//generate random nospam number (4 bytes)
+checksum = xor_2_bytes(public_key+Random_NoSpam_number);							//XOR checksum public_key + NoSpam_number
+
+document.write(//return new ToxID
+'<br><br><b>Specified friend2</b>'+
+'<br> ('+public_key.length/2+' bytes) public_key: '+public_key+
+'<br>('+Random_NoSpam_number.length/2+' bytes) Random_NoSpam_number: '+Random_NoSpam_number+
+'<br>('+checksum.length/2+' bytes) checksum Pub+Nospam: '+checksum+
+'<br>('+(public_key+Random_NoSpam_number+checksum).length/2+' bytes) <b>New ToxID: '+public_key+Random_NoSpam_number+checksum+'</b>');
+
+
+
+
+
+
+</script>
